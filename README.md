@@ -1,10 +1,10 @@
 # 🧠 TensorBrain  
 
-**TensorBrain** is a lightweight deep learning framework built from scratch for learning, experimentation, and systems research. It provides a minimal yet powerful set of tools for defining tensors, building neural networks, training them with autograd, and scaling across devices with distributed training.  
+**TensorBrain** is a lightweight deep learning framework built from scratch for systems research. It provides a minimal set of tools for defining tensors, building neural networks, training them with autograd, and scaling a Large Language Model across devices with distributed quantization.  
 
 ---
 
-## ✨ Features  
+## Features  
 - 🔗 **Autograd Engine** — automatic differentiation with a dynamic computation graph.  
 - 📦 **Core Modules** — Linear, Conv2D, Embedding, Transformer blocks.  
 - ⚡ **Distributed Training** — Data Parallel (DDP) and Pipeline Parallel (1F1B scheduling).  
@@ -42,12 +42,6 @@ examples/
 ```
 
 ---
-
-## 🎯 Why TensorBrain?  
-TensorBrain is not meant to compete with PyTorch or TensorFlow. Instead, it’s a **research-grade educational framework** designed to:  
-- Demystify how modern deep learning systems work under the hood.  
-- Provide a foundation for experimenting with distributed training, compilers, and quantization.  
-- Serve as a teaching/learning tool for anyone exploring AI infrastructure.  
 
 ---
 
