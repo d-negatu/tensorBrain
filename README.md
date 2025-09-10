@@ -1,6 +1,6 @@
 # TensorBrain  
 
-TensorBrain is a lightweight deep learning framework built from scratch for systems research. It provides a minimal set of tools for defining tensors, building neural networks, training them with autograd, and scaling across devices with distributed training.  
+TensorBrain is a deep learning framework built from scratch for systems research. It provides a minimal set of tools for defining tensors, building neural networks, training them with autograd, and scaling across devices with distributed training.  
 
 ---
 
