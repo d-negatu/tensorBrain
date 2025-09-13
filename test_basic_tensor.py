@@ -40,19 +40,31 @@ def test_gradient_initialization():
     """Test gradient initialization and zero_grad."""
     print("\n🧪 Testing gradient initialization...")
     
-    t = Tensor([1, 2, 3], requires_grad=True)
+    # Test scalar tensor (should work with default gradient)
+    t_scalar = Tensor(5.0, requires_grad=True)
     
     # Initially no gradient
-    assert t.grad is None
+    assert t_scalar.grad is None
     
     # After backward, gradient should be initialized
-    t.backward()
-    assert t.grad is not None
-    assert np.array_equal(t.grad, [1, 1, 1])  # Default gradient is ones
+    t_scalar.backward()
+    assert t_scalar.grad is not None
+    assert np.array_equal(t_scalar.grad, [1.0])  # Default gradient is 1 for scalars
     
     # Test zero_grad
-    t.zero_grad()
-    assert np.array_equal(t.grad, [0, 0, 0])
+    t_scalar.zero_grad()
+    assert np.array_equal(t_scalar.grad, [0.0])
+    
+    # Test non-scalar tensor (should require explicit gradient)
+    t_vector = Tensor([1, 2, 3], requires_grad=True)
+    assert t_vector.grad is None
+    
+    # This should work with explicit gradient
+    gradient = np.array([0.1, 0.2, 0.3])
+    t_vector.backward(gradient)
+    assert t_vector.grad is not None
+    # Check if gradients are close (allowing for small floating point differences)
+    assert np.allclose(t_vector.grad, gradient), f"Expected {gradient}, got {t_vector.grad}"
     
     print("✅ Gradient initialization tests passed!")
 
