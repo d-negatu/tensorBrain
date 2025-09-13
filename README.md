@@ -4,18 +4,18 @@ TensorBrain is a deep learning framework built from scratch for systems research
 
 ---
 
-## Features  
-- 🔗 **Autograd Engine** — automatic differentiation with a dynamic computation graph.  
-- 📦 **Core Modules** — Linear, Conv2D, Embedding, Transformer blocks.  
-- ⚡ **Distributed Training** — Data Parallel (DDP) and Pipeline Parallel (1F1B scheduling).  
-- 🔧 **Graph Compiler** — intermediate representation (IR) with constant folding and op fusion.  
-- 📉 **Quantization** — post-training INT8 quantization for faster inference.  
-- 🚀 **Serving Runtime** — compile → deploy → serve with FastAPI, benchmarked for low latency.  
-- 🧪 **Unit Tests** — parity checks against PyTorch for correctness.  
+## 
+-  **Autograd Engine** — automatic differentiation with a dynamic computation graph.  
+-  **Core Modules** — Linear, Conv2D, Embedding, Transformer blocks.  
+-  **Distributed Training** — Data Parallel (DDP) and Pipeline Parallel (1F1B scheduling).  
+-  **Graph Compiler** — intermediate representation (IR) with constant folding and op fusion.  
+-  **Quantization** — post-training INT8 quantization for faster inference.  
+-  **Serving Runtime** — compile → deploy → serve with FastAPI, benchmarked for low latency.  
+-  **Unit Tests** — parity checks against PyTorch for correctness.  
 
 ---
 
-## 📊 Benchmarks  
+## Benchmarks  
 - Achieved **0.86× scaling efficiency on 2 GPUs** with data parallel training.  
 - Reduced memory footprint by **32%** with pipeline micro-batching (1F1B).  
 - Improved inference throughput **2.1×** with fused ops and INT8 quantization.  
