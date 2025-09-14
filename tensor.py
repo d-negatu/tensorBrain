@@ -38,7 +38,6 @@ class Tensor:
         self.grad_fn = grad_fn
         self.grad = None
         self.device = device
-
         # For autograd - store references to input tensors
         self._saved_tensors = []
     
@@ -95,9 +94,146 @@ class Tensor:
     def __repr__(self) -> str:
         """String representation of tensor."""
         return f"Tensor({self.data}, requires_grad={self.requires_grad})"
+    
+    def __matmul__(self, other):
+        """Matrix multiplication: self @ other"""
+        if not isinstance(other, Tensor):
+            other = Tensor(other)
+        
+        # Check shape compatibility for matrix multiplication
+        if self.data.shape[-1] != other.data.shape[0]:
+            raise ValueError(f"Shapes {self.data.shape} and {other.data.shape} are not compatible for matrix multiplication")
+        
+        result_data = self.data @ other.data
+        requires_grad = self.requires_grad or other.requires_grad
+        
+        return Tensor(result_data, requires_grad=requires_grad)
+    
+    def sum(self, dim: Optional[int] = None, keepdim: bool = False):
+        """
+        Sum along dimension.
+        
+        Args:
+            dim: Dimension to sum along (None = sum all elements)
+            keepdim: Whether to keep the dimension (True) or remove it (False)
+            
+        Returns:
+            New Tensor with summed values
+        """
+        if dim is None:
+            # Sum all elements into a scalar
+            result_data = np.sum(self.data)
+            return Tensor(result_data, requires_grad=self.requires_grad)
+        else:
+            # Sum along specified dimension
+            result_data = np.sum(self.data, axis=dim, keepdims=keepdim)
+            return Tensor(result_data, requires_grad=self.requires_grad)
+    
+    def mean(self, dim: Optional[int] = None, keepdim: bool = False):
+        """
+        Mean along dimension.
+        
+        Args:
+            dim: Dimension to compute mean along (None = mean of all elements)
+            keepdim: Whether to keep the dimension (True) or remove it (False)
+            
+        Returns:
+            New Tensor with mean values
+        """
+        if dim is None:
+            # Mean of all elements into a scalar
+            result_data = np.mean(self.data)
+            return Tensor(result_data, requires_grad=self.requires_grad)
+        else:
+            # Mean along specified dimension
+            result_data = np.mean(self.data, axis=dim, keepdims=keepdim)
+            return Tensor(result_data, requires_grad=self.requires_grad)
+
+    def __add__(self, other):
+        """
+        Element-wise addition: self + other
+        
+        Args:
+            other: Another tensor or scalar to add
+            
+        Returns:
+            New Tensor with the sum
+        """
+        if not isinstance(other, Tensor):
+            other = Tensor(other)
+        if(self.data.shape != other.data.shape):
+            raise ValueError(f"Shape mismatch: {self.data.shape} != {other.data.shape}")
+        result_data = self.data + other.data
+        # Gradient inheritance over neural networks
+        requires_grad = self.requires_grad or other.requires_grad
+
+        return Tensor(result_data, requires_grad=requires_grad)
+
+    def __mul__(self, other):
+        if not isinstance(other, Tensor):
+            other = Tensor(other)
+        if(self.data.shape != other.data.shape):
+            raise ValueError(f"Shape mismatch: {self.data.shape} != {other.data.shape}")
+        result_data = self.data * other.data
+        requires_grad = self.requires_grad or other.requires_grad
+        return Tensor(result_data, requires_grad=requires_grad)
+
+    def __matmul__(self, other):
+        """Matrix multiplication: self @ other"""
+        if not isinstance(other, Tensor):
+            other = Tensor(other)
+        
+        # Check shape compatibility for matrix multiplication
+        if self.data.shape[-1] != other.data.shape[0]:
+            raise ValueError(f"Shapes {self.data.shape} and {other.data.shape} are not compatible for matrix multiplication")
+        
+        result_data = self.data @ other.data
+        requires_grad = self.requires_grad or other.requires_grad
+        
+        return Tensor(result_data, requires_grad=requires_grad)
+    
+    def sum(self, dim: Optional[int] = None, keepdim: bool = False):
+        """
+        Sum along dimension.
+    
+    Args:
+        dim: Dimension to sum along (None = sum all elements)
+        keepdim: Whether to keep the dimension (True) or remove it (False)
+        
+    Returns:
+        New Tensor with summed values
+        """
+        if dim is None:
+            # Sum all elements into a scalar
+            result_data = np.sum(self.data)
+            # Always returns a scalar tensor
+            return Tensor(result_data, requires_grad=self.requires_grad)
+        else:
+            # Sum along specified dimension
+            result_data = np.sum(self.data, axis=dim, keepdims=keepdim)
+            return Tensor(result_data, requires_grad=self.requires_grad)
+    
+    def mean(self, dim: Optional[int] = None, keepdim: bool = False):
+        """
+        Mean along dimension.
+        
+        Args:
+            dim: Dimension to compute mean along (None = mean of all elements)
+            keepdim: Whether to keep the dimension (True) or remove it (False)
+            
+        Returns:
+            New Tensor with mean values
+        """
+        if dim is None:
+            # Mean of all elements into a scalar
+            result_data = np.mean(self.data)
+            return Tensor(result_data, requires_grad=self.requires_grad)
+        else:
+            # Mean along specified dimension
+            result_data = np.mean(self.data, axis=dim, keepdims=keepdim)
+            return Tensor(result_data, requires_grad=self.requires_grad)
 
 
-# Placeholder for Function class (we'll implement this next)
 class Function:
     """Base class for autograd functions."""
     pass
