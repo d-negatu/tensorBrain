@@ -5,7 +5,8 @@ TensorBrain is a deep learning framework built from scratch for systems research
 ---
 
 ## 
--  **Autograd Engine** — automatic differentiation with a dynamic computation graph.  
+-  **Autograd Engine** — automatic differentiation with a dynamic computation graph.
+  ![Tensor illustration](https://github.com/pytorch/pytorch/blob/9708fcf92db88b80b9010c68662d634434da3106/docs/source/_static/img/tensor_illustration.png)
 -  **Core Modules** — Linear, Conv2D, Embedding, Transformer blocks.  
 -  **Distributed Training** — Data Parallel (DDP) and Pipeline Parallel (1F1B scheduling).  
 -  **Graph Compiler** — intermediate representation (IR) with constant folding and op fusion.  
