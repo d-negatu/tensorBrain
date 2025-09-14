@@ -7,10 +7,10 @@ TensorBrain is a deep learning framework built from scratch for systems research
 ## Features  
 
 - **Autograd Engine** — automatic differentiation with a dynamic computation graph.  
-![Computation graph](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*1X9lVngy3H9tXz0kscT5Kg.png)  
+![Computation graph](https://upload.wikimedia.org/wikipedia/commons/0/0c/Backpropagation.png)  
 
 - **Multi-Dimensional Tensor Operations** — broadcasting and matrix multiplication across N-D tensors.  
-![Tensor illustration](https://github.com/pytorch/pytorch/blob/9708fcf92db88b80b9010c68662d634434da3106/docs/source/_static/img/tensor_illustration.png)  
+![Tensor illustration](https://github.com/pytorch/pytorch/raw/main/docs/source/_static/img/tensor_illustration.png)  
 
 - **Neural Network Modules** — Linear, Conv2D, Embedding, and Transformer blocks.  
 ![Transformer block](https://jalammar.github.io/images/t/transformer_block_diagram.png)  
@@ -24,7 +24,7 @@ TensorBrain is a deep learning framework built from scratch for systems research
 - **Quantization** — post-training INT8 quantization for faster inference.  
 
 - **Serving Runtime** — compile → deploy → serve with FastAPI, benchmarked for low latency.  
-![Serving diagram](https://miro.medium.com/v2/resize:fit:1200/format:webp/1*FZ6IR7Hj0B0DQ0b7T9HJgA.png)  
+![Serving diagram](https://upload.wikimedia.org/wikipedia/commons/6/6f/FastAPI-logo.png)  
 
 - **Unit Tests** — parity checks against PyTorch for correctness.  
 
