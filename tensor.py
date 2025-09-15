@@ -54,11 +54,8 @@ class Tensor:
             
         # Step 2: Handle default gradient
         if gradient is None:
-            # For scalar tensors, gradient is 1
-            if self.data.size == 1:
-                gradient = np.ones_like(self.data)  # Set to 1
-            else:
-                raise RuntimeError("gradient must be specified for non-scalar tensors")
+            # Default gradient is ones with the same shape as the tensor
+            gradient = np.ones_like(self.data)
         
         # Step 3: Initialize gradient storage
         if self.grad is None:
@@ -95,59 +92,6 @@ class Tensor:
         """String representation of tensor."""
         return f"Tensor({self.data}, requires_grad={self.requires_grad})"
     
-    def __matmul__(self, other):
-        """Matrix multiplication: self @ other"""
-        if not isinstance(other, Tensor):
-            other = Tensor(other)
-        
-        # Check shape compatibility for matrix multiplication
-        if self.data.shape[-1] != other.data.shape[0]:
-            raise ValueError(f"Shapes {self.data.shape} and {other.data.shape} are not compatible for matrix multiplication")
-        
-        result_data = self.data @ other.data
-        requires_grad = self.requires_grad or other.requires_grad
-        
-        return Tensor(result_data, requires_grad=requires_grad)
-    
-    def sum(self, dim: Optional[int] = None, keepdim: bool = False):
-        """
-        Sum along dimension.
-        
-        Args:
-            dim: Dimension to sum along (None = sum all elements)
-            keepdim: Whether to keep the dimension (True) or remove it (False)
-            
-        Returns:
-            New Tensor with summed values
-        """
-        if dim is None:
-            # Sum all elements into a scalar
-            result_data = np.sum(self.data)
-            return Tensor(result_data, requires_grad=self.requires_grad)
-        else:
-            # Sum along specified dimension
-            result_data = np.sum(self.data, axis=dim, keepdims=keepdim)
-            return Tensor(result_data, requires_grad=self.requires_grad)
-    
-    def mean(self, dim: Optional[int] = None, keepdim: bool = False):
-        """
-        Mean along dimension.
-        
-        Args:
-            dim: Dimension to compute mean along (None = mean of all elements)
-            keepdim: Whether to keep the dimension (True) or remove it (False)
-            
-        Returns:
-            New Tensor with mean values
-        """
-        if dim is None:
-            # Mean of all elements into a scalar
-            result_data = np.mean(self.data)
-            return Tensor(result_data, requires_grad=self.requires_grad)
-        else:
-            # Mean along specified dimension
-            result_data = np.mean(self.data, axis=dim, keepdims=keepdim)
-            return Tensor(result_data, requires_grad=self.requires_grad)
 
     def __add__(self, other):
         """
@@ -163,20 +107,39 @@ class Tensor:
             other = Tensor(other)
         if(self.data.shape != other.data.shape):
             raise ValueError(f"Shape mismatch: {self.data.shape} != {other.data.shape}")
-        result_data = self.data + other.data
-        # Gradient inheritance over neural networks
+        
+        # Check if we need gradients
         requires_grad = self.requires_grad or other.requires_grad
-
-        return Tensor(result_data, requires_grad=requires_grad)
+        
+        if requires_grad:
+            # Create gradient function and use it
+            grad_fn = AddFunction()
+            result_data = grad_fn.forward(self, other)
+            return Tensor(result_data, requires_grad=requires_grad, grad_fn=grad_fn)
+        else:
+            # No gradients needed, just compute result
+            result_data = self.data + other.data
+            return Tensor(result_data, requires_grad=False)
 
     def __mul__(self, other):
+        """Element-wise multiplication: self * other"""
         if not isinstance(other, Tensor):
             other = Tensor(other)
         if(self.data.shape != other.data.shape):
             raise ValueError(f"Shape mismatch: {self.data.shape} != {other.data.shape}")
-        result_data = self.data * other.data
+        
+        # Check if we need gradients
         requires_grad = self.requires_grad or other.requires_grad
-        return Tensor(result_data, requires_grad=requires_grad)
+        
+        if requires_grad:
+            # Create gradient function and use it
+            grad_fn = MulFunction()
+            result_data = grad_fn.forward(self, other)
+            return Tensor(result_data, requires_grad=requires_grad, grad_fn=grad_fn)
+        else:
+            # No gradients needed, just compute result
+            result_data = self.data * other.data
+            return Tensor(result_data, requires_grad=False)
 
     def __matmul__(self, other):
         """Matrix multiplication: self @ other"""
@@ -187,31 +150,42 @@ class Tensor:
         if self.data.shape[-1] != other.data.shape[0]:
             raise ValueError(f"Shapes {self.data.shape} and {other.data.shape} are not compatible for matrix multiplication")
         
-        result_data = self.data @ other.data
+        # Check if we need gradients
         requires_grad = self.requires_grad or other.requires_grad
         
-        return Tensor(result_data, requires_grad=requires_grad)
+        if requires_grad:
+            # Create gradient function and use it
+            grad_fn = MatMulFunction()
+            result_data = grad_fn.forward(self, other)
+            return Tensor(result_data, requires_grad=requires_grad, grad_fn=grad_fn)
+        else:
+            # No gradients needed, just compute result
+            result_data = self.data @ other.data
+            return Tensor(result_data, requires_grad=False)
     
     def sum(self, dim: Optional[int] = None, keepdim: bool = False):
         """
         Sum along dimension.
-    
-    Args:
-        dim: Dimension to sum along (None = sum all elements)
-        keepdim: Whether to keep the dimension (True) or remove it (False)
         
-    Returns:
-        New Tensor with summed values
+        Args:
+            dim: Dimension to sum along (None = sum all elements)
+            keepdim: Whether to keep the dimension (True) or remove it (False)
+            
+        Returns:
+            New Tensor with summed values
         """
-        if dim is None:
-            # Sum all elements into a scalar
-            result_data = np.sum(self.data)
-            # Always returns a scalar tensor
-            return Tensor(result_data, requires_grad=self.requires_grad)
+        if self.requires_grad:
+            # Create gradient function and use it
+            grad_fn = SumFunction()
+            result_data = grad_fn.forward(self, dim, keepdim)
+            return Tensor(result_data, requires_grad=self.requires_grad, grad_fn=grad_fn)
         else:
-            # Sum along specified dimension
-            result_data = np.sum(self.data, axis=dim, keepdims=keepdim)
-            return Tensor(result_data, requires_grad=self.requires_grad)
+            # No gradients needed, just compute result
+            if dim is None:
+                result_data = np.sum(self.data)
+            else:
+                result_data = np.sum(self.data, axis=dim, keepdims=keepdim)
+            return Tensor(result_data, requires_grad=False)
     
     def mean(self, dim: Optional[int] = None, keepdim: bool = False):
         """
@@ -224,16 +198,144 @@ class Tensor:
         Returns:
             New Tensor with mean values
         """
-        if dim is None:
-            # Mean of all elements into a scalar
-            result_data = np.mean(self.data)
-            return Tensor(result_data, requires_grad=self.requires_grad)
+        if self.requires_grad:
+            # Create gradient function and use it
+            grad_fn = MeanFunction()
+            result_data = grad_fn.forward(self, dim, keepdim)
+            return Tensor(result_data, requires_grad=self.requires_grad, grad_fn=grad_fn)
         else:
-            # Mean along specified dimension
-            result_data = np.mean(self.data, axis=dim, keepdims=keepdim)
-            return Tensor(result_data, requires_grad=self.requires_grad)
+            # No gradients needed, just compute result
+            if dim is None:
+                result_data = np.mean(self.data)
+            else:
+                result_data = np.mean(self.data, axis=dim, keepdims=keepdim)
+            return Tensor(result_data, requires_grad=False)
 
 
 class Function:
     """Base class for autograd functions."""
-    pass
+    
+    def __init__(self):
+        self.saved_tensors = []
+    
+    def save_for_backward(self, *tensors):
+        """Save tensors for backward pass."""
+        self.saved_tensors = list(tensors)
+    
+    def forward(self, *args):
+        """Forward pass - to be implemented by subclasses."""
+        raise NotImplementedError
+    
+    def backward(self, grad_output):
+        """Backward pass - to be implemented by subclasses."""
+        raise NotImplementedError
+
+
+class AddFunction(Function):
+    """Gradient function for addition."""
+    
+    def forward(self, a, b):
+        self.save_for_backward(a, b)
+        return a.data + b.data
+    
+    def backward(self, grad_output):
+        a, b = self.saved_tensors
+        
+        # Gradient of addition: ∂(a+b)/∂a = 1, ∂(a+b)/∂b = 1
+        grad_a = grad_output if a.requires_grad else None
+        grad_b = grad_output if b.requires_grad else None
+        
+        if grad_a is not None:
+            a.backward(grad_a)
+        if grad_b is not None:
+            b.backward(grad_b)
+
+
+class MulFunction(Function):
+    """Gradient function for multiplication."""
+    
+    def forward(self, a, b):
+        self.save_for_backward(a, b)
+        return a.data * b.data
+    
+    def backward(self, grad_output):
+        a, b = self.saved_tensors
+        
+        # Gradient of multiplication: ∂(a*b)/∂a = b, ∂(a*b)/∂b = a
+        grad_a = grad_output * b.data if a.requires_grad else None
+        grad_b = grad_output * a.data if b.requires_grad else None
+        
+        if grad_a is not None:
+            a.backward(grad_a)
+        if grad_b is not None:
+            b.backward(grad_b)
+
+
+class MatMulFunction(Function):
+    """Gradient function for matrix multiplication."""
+    
+    def forward(self, a, b):
+        self.save_for_backward(a, b)
+        return a.data @ b.data
+    
+    def backward(self, grad_output):
+        a, b = self.saved_tensors
+        
+        # Gradient of matrix multiplication: ∂(A@B)/∂A = grad_output @ B.T, ∂(A@B)/∂B = A.T @ grad_output
+        grad_a = grad_output @ b.data.T if a.requires_grad else None
+        grad_b = a.data.T @ grad_output if b.requires_grad else None
+        
+        if grad_a is not None:
+            a.backward(grad_a)
+        if grad_b is not None:
+            b.backward(grad_b)
+
+
+class SumFunction(Function):
+    """Gradient function for sum operation."""
+    
+    def forward(self, input_tensor, dim=None, keepdim=False):
+        self.save_for_backward(input_tensor)
+        self.dim = dim
+        self.keepdim = keepdim
+        return np.sum(input_tensor.data, axis=dim, keepdims=keepdim)
+    
+    def backward(self, grad_output):
+        input_tensor, = self.saved_tensors
+        
+        if input_tensor.requires_grad:
+            # Gradient of sum: ∂sum/∂x = 1 (broadcasted to input shape)
+            if self.dim is None:
+                # Sum over all elements
+                grad_input = np.full_like(input_tensor.data, grad_output)
+            else:
+                # Sum over specific dimension
+                grad_input = np.broadcast_to(grad_output, input_tensor.data.shape)
+            
+            input_tensor.backward(grad_input)
+
+
+class MeanFunction(Function):
+    """Gradient function for mean operation."""
+    
+    def forward(self, input_tensor, dim=None, keepdim=False):
+        self.save_for_backward(input_tensor)
+        self.dim = dim
+        self.keepdim = keepdim
+        return np.mean(input_tensor.data, axis=dim, keepdims=keepdim)
+    
+    def backward(self, grad_output):
+        input_tensor, = self.saved_tensors
+        
+        if input_tensor.requires_grad:
+            # Gradient of mean: ∂mean/∂x = 1/n (broadcasted to input shape)
+            if self.dim is None:
+                # Mean over all elements
+                n = input_tensor.data.size
+                grad_input = np.full_like(input_tensor.data, grad_output / n)
+            else:
+                # Mean over specific dimension
+                n = input_tensor.data.shape[self.dim]
+                grad_input = np.broadcast_to(grad_output / n, input_tensor.data.shape)
+            
+            input_tensor.backward(grad_input)
