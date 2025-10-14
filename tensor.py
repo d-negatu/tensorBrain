@@ -141,6 +141,53 @@ class Tensor:
             result_data = self.data * other.data
             return Tensor(result_data, requires_grad=False)
 
+    def __sub__(self, other):
+        """Element-wise subtraction: self - other"""
+        if not isinstance(other, Tensor):
+            other = Tensor(other)
+        if(self.data.shape != other.data.shape):
+            raise ValueError(f"Shape mismatch: {self.data.shape} != {other.data.shape}")
+        
+        # Check if we need gradients
+        requires_grad = self.requires_grad or other.requires_grad
+        
+        if requires_grad:
+            # Create gradient function and use it
+            grad_fn = SubFunction()
+            result_data = grad_fn.forward(self, other)
+            return Tensor(result_data, requires_grad=requires_grad, grad_fn=grad_fn)
+        else:
+            # No gradients needed, just compute result
+            result_data = self.data - other.data
+            return Tensor(result_data, requires_grad=False)
+
+    def __pow__(self, other):
+        """Element-wise power: self ** other"""
+        if not isinstance(other, Tensor):
+            other = Tensor(other)
+        
+        # Handle scalar power (broadcast)
+        if other.data.shape == (1,) or other.data.size == 1:
+            # Scalar power - broadcast to self's shape
+            other_broadcast = Tensor(np.broadcast_to(other.data, self.data.shape), requires_grad=other.requires_grad)
+        elif self.data.shape != other.data.shape:
+            raise ValueError(f"Shape mismatch: {self.data.shape} != {other.data.shape}")
+        else:
+            other_broadcast = other
+        
+        # Check if we need gradients
+        requires_grad = self.requires_grad or other_broadcast.requires_grad
+        
+        if requires_grad:
+            # Create gradient function and use it
+            grad_fn = PowFunction()
+            result_data = grad_fn.forward(self, other_broadcast)
+            return Tensor(result_data, requires_grad=requires_grad, grad_fn=grad_fn)
+        else:
+            # No gradients needed, just compute result
+            result_data = self.data ** other_broadcast.data
+            return Tensor(result_data, requires_grad=False)
+
     def __matmul__(self, other):
         """Matrix multiplication: self @ other"""
         if not isinstance(other, Tensor):
@@ -178,11 +225,14 @@ class Tensor:
             # Create gradient function and use it
             grad_fn = SumFunction()
             result_data = grad_fn.forward(self, dim, keepdim)
+            # Ensure result is a numpy array
+            if not isinstance(result_data, np.ndarray):
+                result_data = np.array(result_data)
             return Tensor(result_data, requires_grad=self.requires_grad, grad_fn=grad_fn)
         else:
             # No gradients needed, just compute result
             if dim is None:
-                result_data = np.sum(self.data)
+                result_data = np.array(np.sum(self.data))
             else:
                 result_data = np.sum(self.data, axis=dim, keepdims=keepdim)
             return Tensor(result_data, requires_grad=False)
@@ -202,14 +252,46 @@ class Tensor:
             # Create gradient function and use it
             grad_fn = MeanFunction()
             result_data = grad_fn.forward(self, dim, keepdim)
+            # Ensure result is a numpy array
+            if not isinstance(result_data, np.ndarray):
+                result_data = np.array(result_data)
             return Tensor(result_data, requires_grad=self.requires_grad, grad_fn=grad_fn)
         else:
             # No gradients needed, just compute result
             if dim is None:
-                result_data = np.mean(self.data)
+                result_data = np.array(np.mean(self.data))
             else:
                 result_data = np.mean(self.data, axis=dim, keepdims=keepdim)
             return Tensor(result_data, requires_grad=False)
+    
+    def var(self, dim: Optional[int] = None, keepdim: bool = False):
+        """Variance along dimension"""
+        if dim is None:
+            result_data = np.array(np.var(self.data))
+        else:
+            result_data = np.var(self.data, axis=dim, keepdims=keepdim)
+        return Tensor(result_data, requires_grad=False)
+    
+    def reshape(self, *shape):
+        """Reshape tensor"""
+        result_data = self.data.reshape(shape)
+        return Tensor(result_data, requires_grad=self.requires_grad)
+    
+    def transpose(self, *axes):
+        """Transpose tensor"""
+        if len(axes) == 0:
+            result_data = self.data.T
+        elif len(axes) == 1:
+            # Single axis - convert to tuple
+            result_data = self.data.transpose(axes[0])
+        else:
+            result_data = self.data.transpose(axes)
+        return Tensor(result_data, requires_grad=self.requires_grad)
+    
+    def __getitem__(self, key):
+        """Tensor indexing/slicing"""
+        result_data = self.data[key]
+        return Tensor(result_data, requires_grad=self.requires_grad)
 
 
 class Function:
@@ -339,3 +421,43 @@ class MeanFunction(Function):
                 grad_input = np.broadcast_to(grad_output / n, input_tensor.data.shape)
             
             input_tensor.backward(grad_input)
+
+
+class SubFunction(Function):
+    """Gradient function for subtraction."""
+    
+    def forward(self, a, b):
+        self.save_for_backward(a, b)
+        return a.data - b.data
+    
+    def backward(self, grad_output):
+        a, b = self.saved_tensors
+        
+        # Gradient of subtraction: ∂(a-b)/∂a = 1, ∂(a-b)/∂b = -1
+        grad_a = grad_output if a.requires_grad else None
+        grad_b = -grad_output if b.requires_grad else None
+        
+        if grad_a is not None:
+            a.backward(grad_a)
+        if grad_b is not None:
+            b.backward(grad_b)
+
+
+class PowFunction(Function):
+    """Gradient function for power operation."""
+    
+    def forward(self, a, b):
+        self.save_for_backward(a, b)
+        return a.data ** b.data
+    
+    def backward(self, grad_output):
+        a, b = self.saved_tensors
+        
+        # Gradient of power: ∂(a^b)/∂a = b * a^(b-1), ∂(a^b)/∂b = a^b * ln(a)
+        grad_a = grad_output * b.data * (a.data ** (b.data - 1)) if a.requires_grad else None
+        grad_b = grad_output * (a.data ** b.data) * np.log(a.data + 1e-8) if b.requires_grad else None
+        
+        if grad_a is not None:
+            a.backward(grad_a)
+        if grad_b is not None:
+            b.backward(grad_b)
